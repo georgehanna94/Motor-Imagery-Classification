@@ -4,9 +4,13 @@ Author: George Hanna
 Date : 18/11/2017
 '''
 import mne
+from mne.decoding import CSP
 import numpy as np
 import EOGRemove_LR
 import matplotlib.pyplot as plt
+from sklearn.pipeline import Pipeline
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.model_selection import ShuffleSplit, cross_val_score
 
 '''Load Data'''
 '''-------------------------------------------'''
@@ -61,8 +65,37 @@ tmin, tmax = 0., 4.
 #Pick EEG channels from dataset
 picks = np.arange(0,22)
 
-# Read epochs
+# Extract epochs and plot for a single Motor imagery event across all channels
 epochs = mne.Epochs(data_obj, events, event_id, tmin, tmax, proj=True, picks=picks,
                 baseline=None, preload=True)
+epochs_data = epochs.get_data()
+#plt.plot(1e3*epochs.times, 1e6*epochs_data[0,:,:].T)
+#plt.xlabel('Time(ms)')
+#plt.ylabel('Epoch Data for Tongue MI (microV)')
+
+'''Do CSP on Epochs to get features and LDA for Classification: code by Martin Billinger '''
+#TODO FIGURE OUT WHY CLASSIFICATION ACCURACY SUCKS
+'''----------------------------------------'''
+# Define a monte-carlo cross-validation generator (reduce variance):
+scores = []
+epochs_train = epochs.copy().crop(tmin=1., tmax=3.5)
+epochs_data_train = epochs_train.get_data()
+labels1 = epochs.events[:, -1] - 2
+labels = labels1 - 769
+cv = ShuffleSplit(10, test_size=0.2, random_state=42)
+cv_split = cv.split(epochs_data_train)
+
+# Assemble a classifier
+lda = LinearDiscriminantAnalysis()
+csp = CSP(n_components=4, reg=None, log=True, norm_trace=False)
+
+# Use scikit-learn Pipeline with cross_val_score function
+clf = Pipeline([('CSP', csp), ('LDA', lda)])
+scores = cross_val_score(clf, epochs_data_train, labels, cv=cv, n_jobs=1)
+
+# Printing the results
+class_balance = np.mean(labels == labels[0])
+class_balance = max(class_balance, 1. - class_balance)
+print("Classification accuracy: %f / Chance level: %f" % (np.mean(scores), class_balance))
 
 print("done")
