@@ -1,74 +1,59 @@
 %% === load training data and train CSP classifier ===
-load data_set_IVb_al_train
-EEG = single(cnt);
+%load data_set_IVb_al_train ---> 2-CLASS Dataset
 
-%Temporal Window length
-n =200;
-nof = 3;
-wnd =[0.5 3.5];
-mrk = sparse(1,mrk.pos,(mrk.y+3)/2);
-Fs = nfo.fs;
+%Load the dataset
+%Set Data path
+dir = '/Users/georgehanna/Projects/MATLAB/BCIComp2a/A01T.gdf';
+
+%Fix Path error
+x = fileparts( which('sopen') );
+   rmpath(x);
+   addpath(x,'-begin');
+
+%Load Data
+[cnt,h] = sload(dir, 0, 'OVERFLOWDETECTION:OFF');
+
+%Select specific events and eliminate rejected trials
+for i = 1:length(h.EVENT.TYP)
+    if(i~=1)
+        if (h.EVENT.TYP(i) ~= 1023)
+            if (~((h.EVENT.TYP(i) ==769 || h.EVENT.TYP(i) ==770 || h.EVENT.TYP(i) ==771 || h.EVENT.TYP(i) ==772)  && h.EVENT.TYP(i-1) ~= 1023))
+                h.EVENT.TYP(i)= NaN;
+                h.EVENT.POS(i)= NaN;
+            end
+        end
+    end
+end
+h.EVENT.TYP(1) = NaN;
+h.EVENT.POS(1) = NaN;
+idx = find(h.EVENT.TYP==1023);
+h.EVENT.TYP(idx) = NaN;
+h.EVENT.POS(idx) = NaN;
+h.EVENT.TYP(isnan(h.EVENT.TYP)) = [];
+h.EVENT.POS(isnan(h.EVENT.POS)) = [];
+
+%Size of remaining markers array will be current size - rejected trials
+markers = zeros(length(h.EVENT.TYP)-numel(find(h.EVENT.TYP ==1023)),2);
+markers(:,1) = h.EVENT.TYP-768;
+markers(:,2) = h.EVENT.POS;
 
 %Bandpass filter between 7 and 30 Hz
 flt = @(f)(f>7&f<30).*(1-cos((f-(7+30)/2)/(7-30)*pi*4));
 
-%Compute Covariance matrices and do frequency filtering using FFT
-[t,c] = size(EEG); idx = reshape(1:t*c-mod(t*c,n),n,[]);
-FLT = real(ifft(fft(EEG).*repmat(flt(Fs*(0:t-1)/t)',1,c)));
-
-% estimate temporal filter using least-squares
-T = FLT(idx)/EEG(idx);
-
-% extract data for all epochs of the first class concatenated (EPO{1}) and 
-% all epochs of the second class concatenated (EPO{2})
-% each array is [#samples x #channels]
-wnd = round(Fs*wnd(1)) : round(Fs*wnd(2));
-for k = 1:2
-    EPO{k} = FLT(repmat(find(mrk==k),length(wnd),1) + repmat(wnd',1,nnz(mrk==k)),:);
-end
-
-% calculate the spatial filter matrix S using CSP (TODO: fill in)
-C_1 = cov(EPO{1});
-C_2 = cov(EPO{2});
-
-R = zeros(2,118,118);
-R(1,:,:)=C_1;
-R(2,:,:)=C_2;
-
-%Get projection matrix
-S = MulticlassCSP(R,6);
-
-%Train LDA
-for k = 1:2
-    X{k} = squeeze(log(var(reshape(EPO{k}*S', length(wnd),[],2*nof))));
-end
-
-%Clean up data for LDA training
-class_1_target = ones(length(X{1}),1);
-class_2_target = -1.*ones(length(X{2}),1);
-class_targets = vertcat(class_1_target,class_2_target);
-adj_train_data = vertcat(X{1},X{2});
-
-% train LDA classifier (preferably with gradual outputs) (TODO: fill in)
-MdlLinear = fitcdiscr(adj_train_data,class_targets);
-w = MdlLinear.Coeffs(1, 2).Linear;
-b = MdlLinear.Coeffs(1, 2).Const;
-
-%[S,T,w,b] = train_csp(single(cnt), nfo.fs, sparse(1,mrk.pos,(mrk.y+3)/2),[0.5 3.5],flt,3,200);
-
+%Train CSP features
+[S,T,Mdl] = train_csp(single(cnt), h.SampleRate, sparse(1,markers(:,2),markers(:,1)),[0.5 3.5],flt,3,200);
 
 %% == load test data and apply CSP classifier for each epoch ===
-load data_set_IVb_al_test
+%load data_set_IVb_al_test
+y = zeros(length(cnt),1);
 for x=1:length(cnt)
-    y(x) = test_csp(single(cnt(x,:)),S,T,w,b);
+    y(x) = test_csp(single(cnt(x,:)),S,T,Mdl);
 end
 
 % calculate loss
-load true_labels
 indices = true_y==-1 | true_y==1;
 loss = eval_mcr(sign(y(indices)),true_y(indices)');
 fprintf('The mis-classification rate on the test set is %.1f percent.\n',100*loss);
-
 
 %% === run pseudo-online ===
 oldpos = 1;         % last data cursor

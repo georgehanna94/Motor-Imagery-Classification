@@ -1,4 +1,4 @@
-function [S,T,Mdl] = train_csp(EEG,Fs,mrk,wnd,f,nof,n)
+function [S,T,w,b] = train_csp(EEG,Fs,mrk,wnd,f,nof,n)
 % Train a CSP+LDA classifier
 % [S,T,w,b] = train_csp(RawSignal, SampleRate, Markers, EpochWnd, SpectralFlt, FltNumber, FltLength)
 %
@@ -68,5 +68,7 @@ adj_train_data = vertcat(X{1},X{2},X{3},X{4});
 t = templateLinear();
 Mdl = fitcecoc(adj_train_data,class_targets,'Learners',t);
 
+w = MdlLinear.Coeffs(1, 2).Linear;
+b = MdlLinear.Coeffs(1, 2).Const;
 
 

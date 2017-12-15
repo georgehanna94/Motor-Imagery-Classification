@@ -1,4 +1,4 @@
-function y = test_csp(X,S,T,w,b)
+function y = test_csp(X,S,T,Mdl)
 % Apply CSP classifier to a new chunk of data
 % Prediction = test_csp(Raw-Block, Spatial-Flt, Temporal-Flt, Weights, Bias)
 %
@@ -24,5 +24,4 @@ B = [B;X]; B = B(end-length(T)+1:end,:);
 % and apply the linear classifier (TODO: fill in...)
 X = log(var(T*(B*S')));
 %filt_data = T*X; %Supposed to filter data from high freq content
-
-y = sign(X*w+b);
+y = predict(Mdl,X);
