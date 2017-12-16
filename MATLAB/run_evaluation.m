@@ -1,57 +1,22 @@
 %% === load training data and train CSP classifier ===
-
-%Load the dataset
-%Set Data path
-dir = '/Users/georgehanna/Projects/MATLAB/BCIComp2a/A01T.gdf';
-
-%Fix Path error
-x = fileparts( which('sopen') );
-   rmpath(x);
-   addpath(x,'-begin');
-
-%Load Data
-[cnt,h] = sload(dir, 0, 'OVERFLOWDETECTION:OFF');
-
-%Select specific events and eliminate rejected trials
-for i = 1:length(h.EVENT.TYP)
-    if(i~=1)
-        if (h.EVENT.TYP(i) ~= 1023)
-            if (~((h.EVENT.TYP(i) ==769 || h.EVENT.TYP(i) ==770 || h.EVENT.TYP(i) ==771 || h.EVENT.TYP(i) ==772)  && h.EVENT.TYP(i-1) ~= 1023))
-                h.EVENT.TYP(i)= NaN;
-                h.EVENT.POS(i)= NaN;
-            end
-        end
-    end
-end
-h.EVENT.TYP(1) = NaN;
-h.EVENT.POS(1) = NaN;
-idx = find(h.EVENT.TYP==1023);
-h.EVENT.TYP(idx) = NaN;
-h.EVENT.POS(idx) = NaN;
-h.EVENT.TYP(isnan(h.EVENT.TYP)) = [];
-h.EVENT.POS(isnan(h.EVENT.POS)) = [];
-
-%Size of remaining markers array will be current size - rejected trials
-markers = zeros(length(h.EVENT.TYP)-numel(find(h.EVENT.TYP ==1023)),2);
-markers(:,1) = h.EVENT.TYP-768;
-markers(:,2) = h.EVENT.POS;
+load data_set_IVb_al_train
 
 %Bandpass filter between 7 and 30 Hz
 flt = @(f)(f>7&f<30).*(1-cos((f-(7+30)/2)/(7-30)*pi*4));
 
 %Train CSP features
-[S,T,Mdl] = train_csp(single(cnt), h.SampleRate, sparse(1,markers(:,2),markers(:,1)),[0.5 3.5],flt,3,200);
+[S,T,w,b] = train_csp(single(cnt), nfo.fs, sparse(1,mrk.pos,(mrk.y+3)/2),[0.5 3.5],flt,3,200);
 
 %% == load test data and apply CSP classifier for each epoch ===
-%load data_set_IVb_al_test
-y = zeros(length(cnt),1);
+load data_set_IVb_al_test
 for x=1:length(cnt)
-    y(x) = test_csp(single(cnt(x,:)),S,T,Mdl);
+    y(x) = test_csp(single(cnt(x,:)),S,T,w,b);
 end
 
 % calculate loss
+load true_labels
 indices = true_y==-1 | true_y==1;
-loss = eval_mcr(y(markers(:,2)),markers(:,1));
+loss = eval_mcr(sign(y(indices)),true_y(indices)');
 fprintf('The mis-classification rate on the test set is %.1f percent.\n',100*loss);
 
 %% === run pseudo-online ===

@@ -1,0 +1,3 @@
+These recordings are from the BCI competition III, data set IVb. If you use this set for a publication, please cite:
+
+Guido Dornhege, Benjamin Blankertz, Gabriel Curio, and Klaus-Robert Müller. Boosting bit rates in non-invasive EEG single-trial classifications by feature combination and multi-class paradigms. IEEE Trans. Biomed. Eng., 51(6):993-1002, June 2004.
