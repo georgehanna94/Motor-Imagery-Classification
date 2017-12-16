@@ -1,11 +1,10 @@
-%% === load training data and train CSP classifier ===
-load data_set_IVb_al_train
+% Obtains X_train, Y_train, S, T using CSP Feature Extraction
+get_features
 
-%Bandpass filter between 7 and 30 Hz
-flt = @(f)(f>7&f<30).*(1-cos((f-(7+30)/2)/(7-30)*pi*4));
-
-%Train CSP features
-[S,T,w,b] = train_csp(single(cnt), nfo.fs, sparse(1,mrk.pos,(mrk.y+3)/2),[0.5 3.5],flt,3,200);
+% 1) Baseline using LDA
+MdlLinear = fitcdiscr(X_train,Y_train);
+w = MdlLinear.Coeffs(1, 2).Linear;
+b = MdlLinear.Coeffs(1, 2).Const;
 
 %% == load test data and apply CSP classifier for each epoch ===
 load data_set_IVb_al_test
