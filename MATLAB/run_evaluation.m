@@ -18,6 +18,37 @@ indices = true_y==-1 | true_y==1;
 loss = eval_mcr(sign(y(indices)),true_y(indices)');
 fprintf('The mis-classification rate on the test set is %.1f percent.\n',100*loss);
 
+% 2) SVM
+
+% a) Normalize data
+data_mean = mean(X_train);
+data_std = std(X_train);
+scaled_train = (X_train - data_mean)./data_std;
+
+% Linear SVM
+
+% 5-Fold Cross Validation 
+%{
+
+C = logspace(3, 6, 3);
+cv_acc = zeros(numel(C),1);
+for i=1:numel(C)
+    sprintf('Optimizing for C = %f', C(i))
+    cv_acc(i) = svmtrain(Y_train, scaled_train, sprintf('-t 0 -c %f -v 5', C(i)))
+end
+
+%}
+ 
+lin_svm = fitcsvm(scaled_train, Y_train);
+for x=1:length(cnt)
+    y(x) = test_svm(single(cnt(x,:)),S,T,lin_svm, data_mean, data_std);
+end
+
+indices = true_y==-1 | true_y==1;
+loss = eval_mcr(sign(y(indices)),true_y(indices)');
+fprintf('The mis-classification rate on the test set is %.1f percent.\n',100*loss);
+
+%{
 %% === run pseudo-online ===
 oldpos = 1;         % last data cursor
 t0 = tic;           % start time
@@ -42,4 +73,6 @@ while 1
         drawnow;
     end
     oldpos = pos;
+    
 end
+%}
