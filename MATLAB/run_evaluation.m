@@ -4,16 +4,17 @@ load data_set_IVb_al_test
 load true_labels
 indices = find(true_y==-1 | true_y==1);
 
-% a) Normalize data
-data_mean = mean(X_train);
-data_std = std(X_train);
-scaled_train = (X_train - data_mean)./data_std;
-
 run_lda
 run_LR
 run_lin_svm
 run_rbf_svm
 run_knn
+
+analyze(true_y, y_lda, indices, 'LDA')
+analyze(true_y, y_lr, indices, 'LR')
+analyze(true_y, y_svm, indices, 'Lin SVM')
+analyze(true_y, y_rbf, indices, 'RBF SVM')
+analyze(true_y, y_knn, indices, 'KNN')
 
 %{
 %% === run pseudo-online ===
