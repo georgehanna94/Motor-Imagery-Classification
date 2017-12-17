@@ -1,24 +1,50 @@
 % Obtains X_train, Y_train, S, T using CSP Feature Extraction
 get_features
+load data_set_IVb_al_test
+load true_labels
 
 % 1) Baseline using LDA
 MdlLinear = fitcdiscr(X_train,Y_train);
 w = MdlLinear.Coeffs(1, 2).Linear;
 b = MdlLinear.Coeffs(1, 2).Const;
 
+y_lda = zeros(size(true_y));
 %% == load test data and apply CSP classifier for each epoch ===
-load data_set_IVb_al_test
 for x=1:length(cnt)
-    y(x) = test_csp(single(cnt(x,:)),S,T,w,b);
+    y_lda(x) = test_csp(single(cnt(x,:)),S,T,w,b);
 end
 
 % calculate loss
-load true_labels
-indices = true_y==-1 | true_y==1;
-loss = eval_mcr(sign(y(indices)),true_y(indices)');
-fprintf('The mis-classification rate on the test set is %.1f percent.\n',100*loss);
+indices = find(true_y==-1 | true_y==1);
+loss = eval_mcr(y_lda(indices),true_y(indices));
+fprintf('The LDA mis-classification rate on the test set is %.1f percent.\n',100*loss);
 
-% 2) SVM
+TBE = true_y(indices);
+TBP = y_lda(indices);
+actual_pos = find(TBE == 1);
+actual_neg = find(TBE == -1);
+pred_pos_lda = find(TBP == 1);
+pred_neg_lda = find(TBP == -1);
+
+% 2) Logistic Regression
+Y_LR = (Y_train == 1) + 1;
+LR = mnrfit(double(X_train), Y_LR);
+
+y_lr = zeros(size(true_y));
+for x=1:length(cnt)
+    y_lr(x) = test_csp(single(cnt(x,:)),S,T,LR(2:end),LR(1));
+end
+
+% calculate loss
+indices = find(true_y==-1 | true_y==1);
+loss = eval_mcr(y_lr(indices),true_y(indices));
+fprintf('The LR mis-classification rate on the test set is %.1f percent.\n',100*loss);
+
+TBLR = y_lr(indices);
+pred_pos_lr= find(TBLR == 1);
+pred_neg_lr = find(TBLR == -1);
+
+% 3) SVM
 
 % a) Normalize data
 data_mean = mean(X_train);
@@ -39,15 +65,18 @@ end
 
 %}
  
-lin_svm = fitcsvm(scaled_train, Y_train);
+lin_svm = fitcsvm(X_train, Y_train);
+y_svm = zeros(size(true_y));
 for x=1:length(cnt)
-    y(x) = test_svm(single(cnt(x,:)),S,T,lin_svm, data_mean, data_std);
+    y_svm(x) = test_svm(single(cnt(x,:)),S,T,lin_svm, data_mean, data_std);
 end
 
-indices = true_y==-1 | true_y==1;
-loss = eval_mcr(sign(y(indices)),true_y(indices)');
-fprintf('The mis-classification rate on the test set is %.1f percent.\n',100*loss);
+loss = eval_mcr(y_svm(indices),true_y(indices));
+fprintf('The Lin SVM mis-classification rate on the test set is %.1f percent.\n',100*loss);
 
+TBSVM = y_svm(indices);
+pred_pos_svm= find(TBSVM == 1);
+pred_neg_svm = find(TBSVM == -1);
 %{
 %% === run pseudo-online ===
 oldpos = 1;         % last data cursor
