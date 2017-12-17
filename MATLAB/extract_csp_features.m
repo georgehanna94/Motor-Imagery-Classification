@@ -39,4 +39,4 @@ class_2_target = -1.*ones(length(X{2}),1);
 Y = vertcat(class_1_target,class_2_target);
 X = vertcat(X{1},X{2});
 
-endfunction
+end
