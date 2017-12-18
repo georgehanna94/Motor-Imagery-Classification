@@ -1,5 +1,5 @@
 % Linear SVM
- 
+
 lin_svm = fitcsvm(X_train, Y_train);
 y_svm = zeros(size(true_y));
 for x=1:length(cnt)

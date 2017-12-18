@@ -4,17 +4,21 @@ load data_set_IVb_al_test
 load true_labels
 indices = find(true_y==-1 | true_y==1);
 
+run_dec_tree
 run_lda
 run_LR
 run_lin_svm
 run_rbf_svm
 run_knn
+run_ann 
 
+analyze(true_y, y_dec_tree, indices, 'Decision Tree')
 analyze(true_y, y_lda, indices, 'LDA')
 analyze(true_y, y_lr, indices, 'LR')
 analyze(true_y, y_svm, indices, 'Lin SVM')
 analyze(true_y, y_rbf, indices, 'RBF SVM')
 analyze(true_y, y_knn, indices, 'KNN')
+analyze(true_y, y_ann, indices, 'ANN')
 
 %{
 %% === run pseudo-online ===

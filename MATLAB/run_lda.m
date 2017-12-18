@@ -12,7 +12,7 @@ end
 % calculate loss
 loss = eval_mcr(y_lda(indices),true_y(indices));
 k = compute_cohens_k(true_y(indices), y_lda(indices));
-fprintf('\nThe LDA mis-classification rate on the test set is %.2f percent & kappa = %.3f\n',100*loss, k);
+fprintf('The LDA mis-classification rate on the test set is %.2f percent & kappa = %.3f\n',100*loss, k);
 
 % For debugging: 
 %{
