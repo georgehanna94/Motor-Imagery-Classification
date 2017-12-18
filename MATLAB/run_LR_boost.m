@@ -1,3 +1,5 @@
+% Takes a long time, predictions from one run have been saved and loaded
+% instead
 %{
 logboost = fitcensemble(X_train, Y_train,'Method', 'LogitBoost');
 
