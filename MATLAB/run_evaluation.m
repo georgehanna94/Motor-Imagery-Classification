@@ -11,6 +11,10 @@ run_lin_svm
 run_rbf_svm
 run_knn
 run_ann 
+run_majority_vote_ensemble
+run_random_forest
+run_LR_boost
+
 
 analyze(true_y, y_dec_tree, indices, 'Decision Tree')
 analyze(true_y, y_lda, indices, 'LDA')
@@ -19,6 +23,9 @@ analyze(true_y, y_svm, indices, 'Lin SVM')
 analyze(true_y, y_rbf, indices, 'RBF SVM')
 analyze(true_y, y_knn, indices, 'KNN')
 analyze(true_y, y_ann, indices, 'ANN')
+analyze(true_y, y_adaboost, indices, 'Random Forest')
+analyze(true_y, y_logboost, indices, 'LR Boost')
+
 
 %{
 %% === run pseudo-online ===
