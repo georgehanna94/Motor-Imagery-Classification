@@ -1,24 +1,32 @@
-%% === load training data and train CSP classifier ===
-load data_set_IVb_al_train
-
-%Bandpass filter between 7 and 30 Hz
-flt = @(f)(f>7&f<30).*(1-cos((f-(7+30)/2)/(7-30)*pi*4));
-
-%Train CSP features
-[S,T,w,b] = train_csp(single(cnt), nfo.fs, sparse(1,mrk.pos,(mrk.y+3)/2),[0.5 3.5],flt,3,200);
-
-%% == load test data and apply CSP classifier for each epoch ===
+% Obtains X_train, Y_train, S, T using CSP Feature Extraction
+get_features
 load data_set_IVb_al_test
-for x=1:length(cnt)
-    y(x) = test_csp(single(cnt(x,:)),S,T,w,b);
-end
-
-% calculate loss
 load true_labels
-indices = true_y==-1 | true_y==1;
-loss = eval_mcr(sign(y(indices)),true_y(indices)');
-fprintf('The mis-classification rate on the test set is %.1f percent.\n',100*loss);
+indices = find(true_y==-1 | true_y==1);
 
+run_dec_tree
+run_lda
+run_LR
+run_lin_svm
+run_rbf_svm
+run_knn
+run_ann 
+run_majority_vote_ensemble
+run_random_forest
+run_LR_boost
+
+analyze(true_y, y_dec_tree, indices, 'Decision Tree')
+analyze(true_y, y_lda, indices, 'LDA')
+analyze(true_y, y_lr, indices, 'LR')
+analyze(true_y, y_svm, indices, 'Lin SVM')
+analyze(true_y, y_rbf, indices, 'RBF SVM')
+analyze(true_y, y_knn, indices, 'KNN')
+analyze(true_y, y_ann, indices, 'ANN')
+analyze(true_y, y_random_forest, indices, 'Random Forest')
+analyze(true_y, y_logboost, indices, 'LR Boost')
+
+
+%{
 %% === run pseudo-online ===
 oldpos = 1;         % last data cursor
 t0 = tic;           % start time
@@ -43,4 +51,6 @@ while 1
         drawnow;
     end
     oldpos = pos;
+    
 end
+%}
